@@ -1,0 +1,196 @@
+\documentclass[journal]{IEEEtran}
+
+\ifCLASSINFOpdf
+\else
+   \usepackage[dvips]{graphicx}
+\fi
+\usepackage{url}
+
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{xcolor} % for color
+\usepackage{ulem}   % for underline
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{stfloats}
+\usepackage{subfigure}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{romannum}
+
+
+
+\renewcommand{\thetable}{S\arabic{table}}
+
+
+\begin{document}
+
+\title{DTNSR: Deep Transformer Network for Single Image Super-Resolution \\ 
+
+\vspace{\baselineskip}
+
+\large Electronic Supplementary Material}
+
+
+
+\author{Jagrati Talreja, \IEEEmembership{Graduate Student Member, IEEE}, Supavadee Aramvith, \IEEEmembership{Senior Member, IEEE} and Takao Onoye, \IEEEmembership{Senior Member, IEEE}}
+
+
+\maketitle
+
+
+
+
+
+\subsection{Initial Feature Extraction and Patch embedding}
+
+As seen in Figure 1, the initial features of the input are extracted using a normal 3 $\times$ 3 convolution, and then patch embedding is applied to the convoluted input. Equations S1 and S2 demonstrate the initial feature extraction stage.
+
+\begin{equation}
+{H_{0}}= {H_{Conv}}({H_{LR}}), \tag{S1}
+\end{equation}
+Here, ${H_{Conv}}$$(.)$ represents 3 $\times$ 3 convolution operation. ${H_{LR}}$ is the input Low-Resolution (LR) image, fed to the normal convolution for extracting initial features, and ${H_{0}}$ is the output of the convolution layer. 
+\begin{equation}
+{H_{P}}= {P_{embed}}({H_{0}}),  \tag{S2}
+\end{equation}
+${P_{embed}}$$(.)$ represents Patch Embedding, and ${H_{P}}$ results from embeddings obtained after applying Patch embedding. After obtaining the initial features, patch embedding is applied on ${H_{0}}$, as depicted in Equation 2. \textit{L} and \textit{P} are the embedding dimensions of the input token of subsequent Transformer.
+
+\subsection{Local Feature Window Transformer Block (LFWT)}
+
+\begin{equation}
+{M_{SWMSA}}= {H_{SWMSA}}({H_{LN}}({H_{I1}})) + {H_{I1}}, \tag{S3}
+\end{equation}
+
+Here,  ${H_{I1}}$ is the input to the Local Feature Window Transformer Block, ${H_{LN}}$$(.)$ is the Layer Norm function, $({H_{SWMSA}})$$(.)$ is the Shifted Window Multi-head Self-Attention function, ${M_{SWMSA}}$  is the output of the SW-MSA [19] module in the LFWT Block.
+\begin{equation}
+{H_{LFWT}}= {H_{MLP}}({H_{LN}}({M_{SWMSA}})) + {M_{SWMSA}},  \tag{S4}
+\end{equation}
+
+In Equation 4, ${H_{MLP}}$$(.)$ is the output function of the Multi-layer Proton, and ${H_{LFWT}}$ represents the output of the Local Feature Window Transformer (LFWT) Block. 
+
+
+\subsection{Xception Block}
+
+\begin{equation}
+\begin{aligned}
+    {H_{X}} &= \text{ReLU}\bigl(H_{\text{Conv}}(H_{\text{DWConv}}(H_{\text{LFWT}}))\bigr) \\ 
+    &\quad+ \text{ReLU}\bigl(H_{\text{Conv}}(H_{\text{DWConv}}(H_{\text{LFWT}}))\bigr), 
+\end{aligned}
+\tag{S5}
+\end{equation}
+
+Here, $H_{\text{DWConv}}$$(.)$ is the Depthwise Separable convolution operation function, ${H_{\text{Conv}}}$$(.)$  is the Pointwise convolution operation function, ${ReLU}$$(.)$ represents the non-linearity, and ${H_{X}}$ represents the output of the Xception Block. 
+
+\subsection{Multi-Layer Feature Fusion Block}
+As the features from multiple paths enter the MLFF block, they are concatenated, as shown in Equation S6. 
+
+\begin{equation}
+{MLFF_{Cat}}= {cat}({H_{S1}},{H_{S2}},{H_{S3}},{H_{D1}},{H_{D2}},{H_{D3}}), \tag{S6}
+\end{equation}
+
+In Equation 6, ${MLFF_{Cat}}$ denotes the output of the concatenation in the MLFF Block, ${cat}$$(.)$ is the concatenation operation, ${H_{S1}},{H_{S2}},{H_{S3}},{H_{D1}},{H_{D2}},{H_{D3}}$ are the shallow and dense features from paths S1, S2, S3, D1, D2, and D3. 
+
+\vspace{\baselineskip}
+
+After this, these concatenated features are passed through a Depthwise Separable convolution layer and a Fully Connected layer to reduce the computational burden.
+
+\begin{equation}
+{MLFF_{DW}}= {H_{DWConv}}({H_{FC}}({MLFF_{Cat}})), \tag{S7}
+\end{equation}
+
+In Equation 7, ${H_{FC}}$$(.)$ is the Fully Connected layer function, ${MLFF_{DW}}$ is the result obtained in the MLFF Block by the Depthwise Separable convolution.
+
+\vspace{\baselineskip}
+
+After applying the non-linearity and residual connection, the generated features are then concatenated together. 
+
+\begin{equation}
+{MLFF_{FC}}= {cat}({ReLU}({MLFF_{DW}}), {MLFF_{DW}}),  \tag{S8}
+\end{equation}
+
+${MLFF_{FC}}$, as seen in Equation 8, is the input of the last Fully Connected layer in the MLFF Block.
+
+\vspace{\baselineskip}
+
+The concatenated output is then passed to the Fully Connected layer to better generalize the data.
+
+\begin{equation}
+{MLFF_{O}}= {H_{FC}}({MLFF_{FC}}),  \tag{S9}
+\end{equation}
+
+${MLFF_{O}}$ in Equation 9 is the output of the MLFF Block.
+
+
+
+Finally, the Multi-Layer Feature Fusion Block (MLFF) output is fed to the deconvolution layer to reconstruct the high-resolution image.
+
+\begin{equation}
+{HR_{O}}= {H_{DConv}}({MLFF_{O}}), \tag{S10}
+\end{equation}
+
+Lastly, in Equation 10, ${H_{DConv}}$$(.)$ is the deconvolution operation, and ${HR_{O}}$ is the generated high-resolution output.
+
+\vspace{-\baselineskip}
+
+\begin{table*} 
+%\floatsetup{heightadjust=object,valign=t} % Adjust vertical alignment
+\centering
+\caption{Impact of varying window sizes on performance for $\times$4 upscaling factor. {\color{red}\textbf{Red}} indicates the best quantitative value, whereas the {\color{blue}\underline{blue}} indicates the second-best quantitative value.}
+\label{table5}
+\setlength{\tabcolsep}{3pt}
+
+\begin{tabular}{|c|c|cc|cc|cc|cc|cc|}
+  \hline
+  \multirow{2}{*}{Method} & \multirow{2}{*}{Window Size} & \multicolumn{2}{c|}{Set5 [38]} & \multicolumn{2}{c|}{Set14 [39]} & \multicolumn{2}{c|}{BSD100 [40]} & \multicolumn{2}{c|}{Urban100 [41]} & \multicolumn{2}{c|}{Manga109 [42]}   \\
+  
+\cline{3-12} && \multicolumn{1}{c|}{PSNR}  & SSIM & \multicolumn{1}{c|}{PSNR}  & SSIM  & \multicolumn{1}{c|}{PSNR}  & SSIM  & \multicolumn{1}{c|}{PSNR}  & SSIM & \multicolumn{1}{c|}{PSNR}  & SSIM \\
+ \hline
+  \multirow{3}{*}{SwinIR [17]} & {8 $\times$ 8}  & \multicolumn{1}{c|}{38.24} &{0.9615}  & \multicolumn{1}{c|}{33.94} &{0.9212} & \multicolumn{1}{c|}{32.39} &{0.9023} & \multicolumn{1}{c|}{33.09} &{0.9373}  & \multicolumn{1}{c|}{39.34} &{0.9784} \\
+            & {16 $\times$ 16}   & \multicolumn{1}{c|}{38.32} &{0.9618}  & \multicolumn{1}{c|}{34.00} &{0.9212} & \multicolumn{1}{c|}{\color{blue}\underline{32.44}} &{\color{blue}\underline{0.9030}} & \multicolumn{1}{c|}{33.40} &{0.9394}  & \multicolumn{1}{c|}{39.53} &{0.9791} \\
+            & {24 $\times$ 24} & \multicolumn{1}{c|}{38.35} &{0.9620}  & \multicolumn{1}{c|}{34.04} &{0.9214} & \multicolumn{1}{c|}{\color{red}\textbf{32.48}} &{\color{red}\textbf{0.9034}} & \multicolumn{1}{c|}{\color{blue}\underline{33.54}} &{0.9402}  & \multicolumn{1}{c|}{\color{blue}\underline{39.71}} &{\color{red}\textbf{0.9798}}  \\
+  \hline
+  \multirow{3}{*}{SRFormer [19]} & {8 $\times$ 8}  & \multicolumn{1}{c|}{38.20} &{0.9611}  & \multicolumn{1}{c|}{34.06} &{0.9214} & \multicolumn{1}{c|}{32.36} &{0.9021} & \multicolumn{1}{c|}{32.92} &{0.9361}  & \multicolumn{1}{c|}{39.10} &{0.9777} \\
+            & {16 $\times$ 16}   & \multicolumn{1}{c|}{38.31} &{0.9617}  & \multicolumn{1}{c|}{34.10} &{0.9217} & \multicolumn{1}{c|}{32.43} &{0.9026} & \multicolumn{1}{c|}{33.26} &{0.9385}  & \multicolumn{1}{c|}{39.36} &{0.9785} \\
+            & {24 $\times$ 24} & \multicolumn{1}{c|}{\color{blue}\underline{38.38}} &{\color{blue}\underline{0.9621}}  & \multicolumn{1}{c|}{\color{blue}\underline{34.13}} &{\color{red}\textbf{0.9228}} & \multicolumn{1}{c|}{\color{blue}\underline{32.44}} &{\color{blue}\underline{0.9030}} & \multicolumn{1}{c|}{33.51} &{\color{blue}\underline{0.9405}}  & \multicolumn{1}{c|}{39.49} &{0.9788}  \\
+  \hline
+  \multirow{3}{*}{DTNSR (Ours)} & {8 $\times$ 8}  & \multicolumn{1}{c|}{38.26} &{0.9616}  & \multicolumn{1}{c|}{34.08} &{0.9215} & \multicolumn{1}{c|}{32.38} &{0.9020} & \multicolumn{1}{c|}{33.06} &{0.9368}  & \multicolumn{1}{c|}{39.22} &{0.9782} \\
+            & {16 $\times$ 16}   & \multicolumn{1}{c|}{38.34} &{0.9620}  & \multicolumn{1}{c|}{34.11} &{0.9217} & \multicolumn{1}{c|}{\color{blue}\underline{32.44}} &{0.9028} & \multicolumn{1}{c|}{33.44} &{0.9398}  & \multicolumn{1}{c|}{39.51} &{0.9793} \\
+            & {24 $\times$ 24} & \multicolumn{1}{c|}{\color{red}\textbf{38.40}} &{\color{red}\textbf{0.9622}}  & \multicolumn{1}{c|}{\color{red}\textbf{34.14}} &{\color{blue}\underline{0.9222}} & \multicolumn{1}{c|}{\color{red}\textbf{32.48}} &{\color{red}\textbf{0.9034}} & \multicolumn{1}{c|}{\color{red}\textbf{33.68}} &{\color{red}\textbf{0.9409}}  & \multicolumn{1}{c|}{\color{red}\textbf{39.86}} &{\color{blue}\underline{0.9796}}  \\
+  \hline
+\end{tabular}
+\end{table*}
+
+\vspace{-\baselineskip}
+\vspace{-\baselineskip}
+\vspace{-\baselineskip}
+\vspace{-\baselineskip}
+\vspace{-\baselineskip}
+
+\begin{table*}
+%\floatsetup{heightadjust=object,valign=t} % Adjust vertical alignment
+\centering
+\caption{Performance evaluation for noise degradation of images on Urban [41] for scale factor $\times$2. The best quantitative value has been recorded as bold with {\color{red}\textbf{Red }} color. The second best quantitative value is shown in {\color{blue}\underline{blue}} color with an underline.}
+
+\label{table6}
+\setlength{\tabcolsep}{1 pt}
+\begin{tabular}{|c|c|c|c|c|c|c|c|} % Specify four columns with "c" for centered alignment
+\hline
+
+\multirow{1}{*}{Methods / Noise Level} & \multirow{1}{*}{BM3D[46]} & \multirow{1}{*}{FFDNet [47]} & \multirow{1}{*}{NCSR [48]}  & \multirow{1}{*}{DnCNN [23]} & \multirow{1}{*}{DTNSR (Our)}\\
+
+\hline
+$\sigma = 5$ & {31.18} & {31.34} & {31.56} & {\color{blue}\underline{31.67}} & {\color{red}\textbf{31.78}}   \\
+$\sigma = 10$ & {29.61} & {29.76} & {29.44} & {29.82} & {29.89}   \\
+$\sigma = 15$ & {28.12} & {28.48} & {28.64} & {28.58} & {28.77}   \\
+    
+% Add more rows as needed
+\hline
+\end{tabular}
+\end{table*}
+
+\end{document}
